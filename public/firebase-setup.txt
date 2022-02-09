@@ -1,0 +1,120 @@
+https://css-tricks.com/user-registration-authentication-firebase-react/#setting-up-firebase
+
+I Setup firebase project and verification method
+
+1. Go to firebase
+2. Add new project and name it (google analytics - optional)
+3. On the left click Auth (2 people icon)
+4. Go to sign-in method
+5. Enable email/password
+
+II Integrate into React app
+
+1. Go to home page (get started by addding firebase toyour app)
+2. Click on </> Icon
+3. Register app - [add your React app name/ or any name]
+4. Click register and you get firebaseConfig file (copy it/ you need that)
+(down you will find example of config file)
+(you need the file to communicate with firebase, also install firebase dependency)
+(npm install firebase)
+5. Make a file (eg. firebase.js) and paste the config you got from firebase
+
+
+III Firebase.js
+
+1. Import getAuth function from firebase/auth
+(we need it for the user reg functionality which firebase gives us)
+2. Setup ContextAPI (AuthProvider - to wrap the components, fn useAuthValue which return useContext(AuthContext))
+3. Wrap components in App.js and setup a router also
+4. to set the currentUser we have to options:
+    1) use the auth instance from firebase (auth.current user is null if user is not signed in);
+    2)*** we use the onAuthStateChanged function we get from firebase/auth - RECOMMENDED
+5. we set the onAuthStateChanged in useEffect in App.js
+(fn onAuthStateChanged)(auth, callbackFn which receives signein user)
+(onAuthStateChanged(auth (user) => {setCurrentUser(user)}))
+6. When we register a user it is set as a current user, automatically
+
+IV Registration.js - sendEmailVerification
+
+1. sendEmailVerification which firebase offers with only auth.currentUser object
+2. add it as a promise after createUser and then push the user to page verify email
+3. in verify email we const {currUser} = useAuthValue to extract currUser?.email
+(optional chaining with ? so our code doesnt throw an error)
+4. Resend email btn: sendEmailVerification + state to disable button for 60sec
+5. async sendEmailVerification will send back error if we click it before 60sec,
+so we add that too
+6. we add interval into useEffect with 2 states: 1 - for time 60sec other isTimerActive
+add them as dependency to useEffect, also effect has return cleanup function for clearInterval
+7. how we start - by shanging state of isTimerActive rather then time state, cause time starts when 
+we click the resend button
+8. remove disable button state cause we will change it to isTimerActive state
+9. put isTimerActive to context cause if user clicks resend button after registering
+it will throw an error cause its less than 60 sec (firebase error)
+10. add it in app as a state and pass to AuthPRovider value as prop of object
+11. destructure it in VerifyEmail component
+12. use it in Register to start timer (ie disable button for 60sec) and navigate to verify email page
+13. navigate to profile page after verification, we do this every 1 sec until verified
+thats why we use interval in use effect
+14. when true is for verifiedEmail on currentUser obj we get we navigate to profile
+
+V Profile.js 
+
+1. we can display data from the user by accessing currUser from context
+(const {currUser} = useAuthValue()) - currUser?.emailVerified - for example
+2. for signout functionality we take fn signout from firebase/auth
+(signout takes one arg its auth from firebase)
+
+
+VI Private profile page
+
+like this we can access profile page from url, we want to make a private route
+1. We make a component PrivateRoute, which is a Route which renders a component dynamicaly
+2. Private route receives ({component: Component, ..rest}) - componetn is a Profile, the rest is if any other props
+<Route
+      {...rest}
+      render={(props) => {
+        return currUser?.emailVerified ? (
+          <Component {...props} />
+        ) : (
+          <Redirect to="login" />
+        );
+      }}
+    ></Route>
+
+then in App.js 
+<PrivateRoute exact path="/profile" element={Profile} />
+
+THIS ALL WORKS FINE IN ROUTER 5, IN 6 IT DOESNT!!!
+FOR REACT ROUTER 6 WE NEED A WORKAROUND, CAUSE OF THE ROUTES COMPONENT 
+ALSO REDIRECT IS NOW NAVIGATE
+explained in component
+
+VII Login.js
+
+1. when user wants to login we check username and pass and if email was verified
+
+
+
+<---  EXAMPLE OF CONFIG FILE IN FIREBASE  --->
+
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyAJwi1Kh3DMlWIGX8F5_8fGLM58Zfr0k3c",
+  authDomain: "fir-user-reg-auth-dc473.firebaseapp.com",
+  projectId: "fir-user-reg-auth-dc473",
+  storageBucket: "fir-user-reg-auth-dc473.appspot.com",
+  messagingSenderId: "1069777380594",
+  appId: "1:1069777380594:web:aaeb866eda761485e0dc6b",
+  measurementId: "G-VN81VT9XJX"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
